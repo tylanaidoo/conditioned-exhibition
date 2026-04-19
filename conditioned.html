@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conditioned — A Digital Exhibition</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: #faf9f7; color: #1a1a1a; min-height: 100vh; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── TOPBAR ── */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 40px; border-bottom: 0.5px solid #d8d4cc; background: #faf9f7; position: sticky; top: 0; z-index: 100; }
+  .topbar-logo { font-family: Georgia, serif; font-size: 15px; font-weight: normal; letter-spacing: 0.06em; color: #1a1a1a; }
+  .topbar-nav { display: flex; gap: 24px; }
+  .topbar-link { font-family: -apple-system, sans-serif; font-size: 12px; color: #888; cursor: pointer; background: none; border: none; padding: 0; letter-spacing: 0.04em; }
+  .topbar-link:hover { color: #1a1a1a; }
+
+  /* ── LANDING ── */
+  #s-landing { min-height: calc(100vh - 49px); display: flex; flex-direction: column; justify-content: space-between; padding: 80px 40px 48px; }
+  .landing-eyebrow { font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #aaa; margin-bottom: 28px; }
+  .landing-title { font-family: Georgia, serif; font-size: clamp(48px, 8vw, 80px); font-weight: normal; line-height: 1.06; color: #1a1a1a; max-width: 640px; margin-bottom: 32px; }
+  .landing-body { font-family: -apple-system, sans-serif; font-size: 15px; color: #666; line-height: 1.75; max-width: 420px; margin-bottom: 0; }
+  .landing-footer { display: flex; align-items: flex-end; justify-content: space-between; border-top: 0.5px solid #d8d4cc; padding-top: 28px; margin-top: 60px; flex-wrap: wrap; gap: 20px; }
+  .enter-btn { font-family: -apple-system, sans-serif; font-size: 13px; padding: 12px 28px; border: 1px solid #1a1a1a; border-radius: 40px; cursor: pointer; background: #1a1a1a; color: #faf9f7; letter-spacing: 0.04em; transition: all 0.2s; }
+  .enter-btn:hover { background: #333; }
+  .landing-meta { font-family: -apple-system, sans-serif; font-size: 12px; color: #aaa; line-height: 1.7; text-align: right; }
+
+  /* ── MAP ── */
+  #s-map { min-height: calc(100vh - 49px); padding: 48px 40px; }
+  .map-eyebrow { font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #aaa; margin-bottom: 8px; }
+  .map-title { font-family: Georgia, serif; font-size: 32px; font-weight: normal; color: #1a1a1a; margin-bottom: 8px; }
+  .map-sub { font-family: -apple-system, sans-serif; font-size: 14px; color: #888; margin-bottom: 36px; }
+  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .room-card { border: 0.5px solid #d8d4cc; border-radius: 12px; padding: 24px; cursor: pointer; background: #fff; transition: all 0.2s; }
+  .room-card:hover { background: #f5f3ef; border-color: #bbb; }
+  .rc-num { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #bbb; margin-bottom: 12px; }
+  .rc-swatch { width: 36px; height: 4px; border-radius: 2px; margin-bottom: 14px; }
+  .rc-title { font-family: Georgia, serif; font-size: 20px; font-weight: normal; color: #1a1a1a; margin-bottom: 8px; }
+  .rc-desc { font-family: -apple-system, sans-serif; font-size: 13px; color: #888; line-height: 1.6; margin-bottom: 14px; }
+  .rc-tag { display: inline-block; font-family: -apple-system, sans-serif; font-size: 10px; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.03em; }
+
+  /* ── ROOM ── */
+  #s-room { min-height: calc(100vh - 49px); }
+  .room-topbar { display: flex; align-items: center; justify-content: space-between; padding: 13px 40px; border-bottom: 0.5px solid #d8d4cc; background: #faf9f7; }
+  .room-crumb { font-family: -apple-system, sans-serif; font-size: 12px; color: #aaa; }
+  .room-crumb span { color: #1a1a1a; }
+  .room-nav-btns { display: flex; gap: 8px; }
+  .room-btn { font-family: -apple-system, sans-serif; font-size: 12px; padding: 7px 16px; border: 0.5px solid #ccc; border-radius: 20px; cursor: pointer; background: transparent; color: #888; transition: all 0.2s; }
+  .room-btn:hover { background: #f0ede8; }
+  .room-btn.primary { background: #1a1a1a; color: #faf9f7; border-color: #1a1a1a; }
+  .room-btn.primary:hover { background: #333; }
+
+  .room-hero { padding: 44px 40px 32px; border-bottom: 0.5px solid #d8d4cc; border-left: 3px solid #ccc; }
+  .room-num { font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #bbb; margin-bottom: 10px; }
+  .room-title-large { font-family: Georgia, serif; font-size: 42px; font-weight: normal; color: #1a1a1a; margin-bottom: 12px; line-height: 1.1; }
+  .room-intro { font-family: -apple-system, sans-serif; font-size: 14px; color: #666; line-height: 1.75; max-width: 560px; }
+  .data-badge { display: inline-block; margin-top: 14px; font-family: -apple-system, sans-serif; font-size: 11px; padding: 5px 12px; border-radius: 20px; background: #f0ede8; color: #888; border: 0.5px solid #d8d4cc; }
+
+  .room-body { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 640px) { .room-body { grid-template-columns: 1fr; } }
+  .room-panel { padding: 28px 32px; }
+  .room-panel-left { border-right: 0.5px solid #d8d4cc; }
+  .panel-label { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #bbb; margin-bottom: 16px; }
+  .art-box { border-radius: 8px; border: 0.5px solid #d8d4cc; overflow: hidden; margin-bottom: 12px; }
+  canvas { display: block; }
+  .art-caption { font-family: -apple-system, sans-serif; font-size: 13px; color: #888; line-height: 1.6; }
+  .pull-quote { border-left: 2px solid #d8d4cc; padding-left: 14px; margin: 16px 0; border-radius: 0; }
+  .pull-quote p { font-family: Georgia, serif; font-size: 14px; color: #555; line-height: 1.7; font-style: italic; }
+  .pull-quote cite { font-family: -apple-system, sans-serif; font-size: 11px; color: #aaa; margin-top: 6px; display: block; font-style: normal; }
+
+  .vis-strip { padding: 24px 32px; background: #f5f3ef; border-bottom: 0.5px solid #d8d4cc; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+  .bar-yr { font-family: -apple-system, sans-serif; font-size: 12px; color: #888; width: 36px; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #e0ddd8; border-radius: 3px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 1.2s ease; }
+  .bar-val { font-family: -apple-system, sans-serif; font-size: 12px; color: #888; width: 54px; text-align: right; }
+
+  .bubble-wrap { padding: 28px 32px; position: relative; }
+  .bubble-note { font-family: -apple-system, sans-serif; font-size: 11px; color: #aaa; margin-top: 10px; line-height: 1.6; }
+  #btooltip { position: absolute; pointer-events: none; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 10px 12px; font-family: -apple-system, sans-serif; font-size: 12px; color: #333; display: none; z-index: 10; max-width: 180px; line-height: 1.55; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  .labour-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid #e8e4de; }
+  .labour-row:last-child { border-bottom: none; }
+  .ldot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">Conditioned</span>
+  <div class="topbar-nav">
+    <button class="topbar-link" onclick="goTo('map')">Rooms</button>
+    <button class="topbar-link" onclick="goTo('landing')">About</button>
+  </div>
+</div>
+
+<div id="s-landing" class="screen active">
+  <div>
+    <p class="landing-eyebrow">A digital exhibition &nbsp;&middot;&nbsp; 2026</p>
+    <h1 class="landing-title">Conditioned</h1>
+    <p class="landing-body">This project begins with a simple premise: if you could walk through a gallery that showed you exactly what AI has done to human culture, what would you see? This exhibition builds that gallery, where every room is painted from real big data.</p>
+  </div>
+  <div class="landing-footer">
+    <button class="enter-btn" onclick="goTo('map')">Enter the exhibition</button>
+    <div class="landing-meta">
+      Tyla Naidoo &nbsp;&middot;&nbsp; MSc Big Data in Culture and Society<br>
+      King&rsquo;s College London &nbsp;&middot;&nbsp; 2025&ndash;26
+    </div>
+  </div>
+</div>
+
+<div id="s-map" class="screen">
+  <p class="map-eyebrow">Gallery map</p>
+  <h2 class="map-title">Choose a room</h2>
+  <p class="map-sub">Four rooms. Four ways AI has conditioned what it means to be human.</p>
+  <div class="rooms-grid">
+    <div class="room-card" onclick="goToRoom(0)">
+      <p class="rc-num">Room 1</p>
+      <div class="rc-swatch" style="background:#c7956c;"></div>
+      <p class="rc-title">Creativity</p>
+      <p class="rc-desc">What happens to art when the artist is an algorithm?</p>
+      <span class="rc-tag" style="background:#faf0e8;color:#712B13;">AI image datasets</span>
+    </div>
+    <div class="room-card" onclick="goToRoom(1)">
+      <p class="rc-num">Room 2</p>
+      <div class="rc-swatch" style="background:#378ADD;"></div>
+      <p class="rc-title">Attention</p>
+      <p class="rc-desc">Two decades of data showing how platforms shortened our focus.</p>
+      <span class="rc-tag" style="background:#e6f1fb;color:#0C447C;">Gloria Mark dataset</span>
+    </div>
+    <div class="room-card" onclick="goToRoom(2)">
+      <p class="rc-num">Room 3</p>
+      <div class="rc-swatch" style="background:#D4537E;"></div>
+      <p class="rc-title">Selfhood</p>
+      <p class="rc-desc">A living field of data showing how algorithms shape who we think we are.</p>
+      <span class="rc-tag" style="background:#fbeaf0;color:#72243E;">Social media dataset</span>
+    </div>
+    <div class="room-card" onclick="goToRoom(3)">
+      <p class="rc-num">Room 4</p>
+      <div class="rc-swatch" style="background:#639922;"></div>
+      <p class="rc-title">Labour</p>
+      <p class="rc-desc">Who gets to make things when AI can make them faster?</p>
+      <span class="rc-tag" style="background:#eaf3de;color:#27500A;">Creative sector data</span>
+    </div>
+  </div>
+</div>
+
+<div id="s-room" class="screen">
+  <div class="room-topbar">
+    <span class="room-crumb" id="crumb">Gallery map &rsaquo; <span id="crumb-name">Creativity</span></span>
+    <div class="room-nav-btns">
+      <button class="room-btn" onclick="goTo('map')">Back to map</button>
+      <button class="room-btn primary" id="next-btn" onclick="nextRoom()">Next room</button>
+    </div>
+  </div>
+  <div id="room-hero" class="room-hero">
+    <p class="room-num" id="rnum"></p>
+    <h2 class="room-title-large" id="rtitle"></h2>
+    <p class="room-intro" id="rintro"></p>
+    <span class="data-badge" id="rbadge"></span>
+  </div>
+  <div id="room-inner"></div>
+</div>
+
+<script>
+const rooms = [
+  {
+    num: 'Room 1 of 4', title: 'Creativity', color: '#c7956c',
+    intro: 'How has AI changed what it means to make something? This room places human-made works alongside AI-generated images, painted from datasets of millions of outputs, asking what is gained and lost when the artist is an algorithm.',
+    badge: 'Data art: AI image dataset vs. art historical archive',
+    render: function(el) {
+      el.innerHTML = `
+      <div class="room-body">
+        <div class="room-panel room-panel-left">
+          <p class="panel-label">Before: human-made</p>
+          <div class="art-box"><canvas id="c-human" height="160" style="width:100%;"></canvas></div>
+          <p class="art-caption">Works created through embodied skill, cultural context, and time. Authorship is inseparable from lived experience.</p>
+          <div class="pull-quote" style="margin-top:16px;"><p>"The work of art has always been reproducible. But mechanical reproduction represents something fundamentally new."</p><cite>Benjamin (1935)</cite></div>
+        </div>
+        <div class="room-panel">
+          <p class="panel-label">After: AI-generated</p>
+          <div class="art-box"><canvas id="c-ai" height="160" style="width:100%;"></canvas></div>
+          <p class="art-caption">Outputs trained on billions of images, produced in seconds, with no authorial experience or intent behind them.</p>
+          <div class="pull-quote" style="margin-top:16px;"><p>"AI can now generate in seconds what took artists years to learn to make."</p><cite>Du Sautoy (2020)</cite></div>
+        </div>
+      </div>`;
+      setTimeout(() => {
+        const hc = document.getElementById('c-human');
+        const ac = document.getElementById('c-ai');
+        if (!hc || !ac) return;
+        const W = hc.offsetWidth || 300;
+        hc.width = W; ac.width = W;
+        drawHuman(hc.getContext('2d'), W, 160);
+        drawAI(ac.getContext('2d'), W, 160);
+      }, 80);
+    }
+  },
+  {
+    num: 'Room 2 of 4', title: 'Attention', color: '#378ADD',
+    intro: 'Platforms engineered to capture attention have measurably shortened it. This room renders two decades of attention span data as a visual whose pace mirrors the collapse it describes.',
+    badge: 'Data art: Gloria Mark longitudinal dataset, UC Irvine (2004 to 2023)',
+    render: function(el) {
+      el.innerHTML = `
+      <div class="vis-strip">
+        <p class="panel-label" style="margin-bottom:16px;">Average time on one screen before switching</p>
+        <div class="bar-row"><span class="bar-yr">2004</span><div class="bar-track"><div class="bar-fill" id="ab1" style="width:0%;background:#378ADD;"></div></div><span class="bar-val">150 sec</span></div>
+        <div class="bar-row"><span class="bar-yr">2012</span><div class="bar-track"><div class="bar-fill" id="ab2" style="width:0%;background:#378ADD;"></div></div><span class="bar-val">75 sec</span></div>
+        <div class="bar-row"><span class="bar-yr">2016</span><div class="bar-track"><div class="bar-fill" id="ab3" style="width:0%;background:#c7956c;"></div></div><span class="bar-val">47 sec</span></div>
+        <div class="bar-row"><span class="bar-yr">2023</span><div class="bar-track"><div class="bar-fill" id="ab4" style="width:0%;background:#c0392b;"></div></div><span class="bar-val">47 sec</span></div>
+      </div>
+      <div class="room-body">
+        <div class="room-panel room-panel-left">
+          <p class="panel-label">Before: sustained reading</p>
+          <p style="font-family:-apple-system,sans-serif;font-size:13px;color:#888;line-height:1.75;margin-bottom:14px;">Reading a novel required hours of uninterrupted attention. This was the cultural norm for educated adults throughout the 20th century.</p>
+          <div class="pull-quote"><p>"The novel demands that readers hold entire worlds in mind across hundreds of pages."</p></div>
+        </div>
+        <div class="room-panel">
+          <p class="panel-label">Now: algorithmic scroll</p>
+          <p style="font-family:-apple-system,sans-serif;font-size:13px;color:#888;line-height:1.75;margin-bottom:14px;">Platforms engineered for engagement serve content in fragments optimised to prevent disengagement. Users switch screens every 47 seconds on average.</p>
+          <div class="pull-quote"><p>"This is not individual failure. It is systemic design."</p><cite>Williams (2018); Han (2017)</cite></div>
+        </div>
+      </div>`;
+      setTimeout(() => {
+        document.getElementById('ab1').style.width = '100%';
+        document.getElementById('ab2').style.width = '50%';
+        document.getElementById('ab3').style.width = '31%';
+        document.getElementById('ab4').style.width = '31%';
+      }, 200);
+    }
+  },
+  {
+    num: 'Room 3 of 4', title: 'Selfhood', color: '#D4537E',
+    intro: 'Each bubble below represents a person whose online identity is shaped by algorithmic feedback. Hover over a bubble to reveal how the platform has conditioned that identity. Watch how clusters form around algorithmically amplified categories.',
+    badge: 'Data art: social media identity dataset rendered as a living population',
+    render: function(el) {
+      el.innerHTML = `
+      <div class="bubble-wrap">
+        <div id="btooltip"></div>
+        <canvas id="bcanvas" height="280" style="width:100%;border-radius:8px;border:0.5px solid #d8d4cc;cursor:crosshair;display:block;"></canvas>
+        <p class="bubble-note">Each circle represents one person. Colour shows the identity category their feed has sorted them into. Hover to explore.</p>
+      </div>
+      <div class="room-body" style="border-top:0.5px solid #d8d4cc;">
+        <div class="room-panel room-panel-left">
+          <div class="pull-quote"><p>"Digital infrastructures do not simply reflect the self but actively participate in governing it."</p><cite>Brubaker (2020)</cite></div>
+        </div>
+        <div class="room-panel">
+          <div class="pull-quote"><p>"Psychopolitics uses likes and data feedback to make subjects complicit in their own governance."</p><cite>Han (2017)</cite></div>
+        </div>
+      </div>`;
+      setTimeout(initBubbles, 100);
+    }
+  },
+  {
+    num: 'Room 4 of 4', title: 'Labour and making', color: '#639922',
+    intro: 'Who gets to make things, and under what conditions? AI is transforming creative labour across writing, design, and visual art, raising urgent questions about displacement, authorship, and economic value.',
+    badge: 'Data art: creative sector employment and AI adoption datasets',
+    render: function(el) {
+      el.innerHTML = `
+      <div class="room-body">
+        <div class="room-panel room-panel-left">
+          <p class="panel-label">Shifts in creative labour</p>
+          <div class="labour-row"><div class="ldot" style="background:#c0392b;"></div><span style="font-family:-apple-system,sans-serif;font-size:13px;color:#1a1a1a;flex:1;">Stock image commissions</span><span style="font-family:-apple-system,sans-serif;font-size:12px;color:#888;">down 50%+ since 2022</span></div>
+          <div class="labour-row"><div class="ldot" style="background:#c0392b;"></div><span style="font-family:-apple-system,sans-serif;font-size:13px;color:#1a1a1a;flex:1;">Entry-level copywriting roles</span><span style="font-family:-apple-system,sans-serif;font-size:12px;color:#888;">down 30% since 2023</span></div>
+          <div class="labour-row"><div class="ldot" style="background:#639922;"></div><span style="font-family:-apple-system,sans-serif;font-size:13px;color:#1a1a1a;flex:1;">AI prompt engineering</span><span style="font-family:-apple-system,sans-serif;font-size:12px;color:#888;">new category, growing</span></div>
+          <div class="labour-row"><div class="ldot" style="background:#639922;"></div><span style="font-family:-apple-system,sans-serif;font-size:13px;color:#1a1a1a;flex:1;">AI-assisted creative production</span><span style="font-family:-apple-system,sans-serif;font-size:12px;color:#888;">mainstream by 2024</span></div>
+        </div>
+        <div class="room-panel">
+          <p class="panel-label">Key tension</p>
+          <p style="font-family:-apple-system,sans-serif;font-size:13px;color:#888;line-height:1.75;margin-bottom:16px;">Platform economies have long expected creative workers to produce for exposure rather than pay. AI accelerates this dynamic, automating the outputs while the infrastructure of exploitation remains intact.</p>
+          <div class="pull-quote"><p>"The promise of getting paid to do what you love obscures the conditions under which that labour is extracted."</p><cite>Duffy (2017)</cite></div>
+        </div>
+      </div>`;
+    }
+  }
+];
+
+let currentRoom = 0;
+let animID = null;
+let bubbles = [];
+
+function goTo(s) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('s-' + s).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goToRoom(i) {
+  currentRoom = i;
+  if (animID) { cancelAnimationFrame(animID); animID = null; }
+  const r = rooms[i];
+  document.getElementById('crumb-name').textContent = r.title;
+  document.getElementById('next-btn').textContent = i < rooms.length - 1 ? 'Next room' : 'Back to map';
+  document.getElementById('rnum').textContent = r.num;
+  document.getElementById('rtitle').textContent = r.title;
+  document.getElementById('rintro').textContent = r.intro;
+  document.getElementById('rbadge').textContent = r.badge;
+  document.getElementById('room-hero').style.borderLeftColor = r.color;
+  const inner = document.getElementById('room-inner');
+  inner.innerHTML = '';
+  r.render(inner);
+  goTo('room');
+}
+
+function nextRoom() {
+  if (currentRoom < rooms.length - 1) { goToRoom(currentRoom + 1); }
+  else { goTo('map'); }
+}
+
+function drawHuman(ctx, W, H) {
+  ctx.fillStyle = '#f5f0eb'; ctx.fillRect(0, 0, W, H);
+  const p = ['#c7956c','#8b5e3c','#d4a574','#6b4226','#e8c99a','#4a3728'];
+  for (let k = 0; k < 18; k++) {
+    ctx.beginPath();
+    ctx.arc(16 + Math.random() * (W - 32), 12 + Math.random() * (H - 24), 7 + Math.random() * 22, 0, Math.PI * 2);
+    ctx.fillStyle = p[Math.floor(Math.random() * p.length)];
+    ctx.globalAlpha = 0.45 + Math.random() * 0.45; ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (let k = 0; k < 5; k++) {
+    ctx.beginPath();
+    ctx.moveTo(Math.random() * W, Math.random() * H);
+    ctx.bezierCurveTo(Math.random() * W, Math.random() * H, Math.random() * W, Math.random() * H, Math.random() * W, Math.random() * H);
+    ctx.strokeStyle = '#8b5e3c'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.2; ctx.stroke(); ctx.globalAlpha = 1;
+  }
+}
+
+function drawAI(ctx, W, H) {
+  ctx.fillStyle = '#eef0f7'; ctx.fillRect(0, 0, W, H);
+  const p = ['#7f77dd','#378ADD','#1D9E75','#9FE1CB','#AFA9EC','#B5D4F4'];
+  for (let k = 0; k < 100; k++) {
+    ctx.beginPath();
+    ctx.arc(Math.random() * W, Math.random() * H, 1 + Math.random() * 6, 0, Math.PI * 2);
+    ctx.fillStyle = p[Math.floor(Math.random() * p.length)];
+    ctx.globalAlpha = 0.2 + Math.random() * 0.5; ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (let k = 0; k < 9; k++) {
+    ctx.beginPath();
+    ctx.arc(Math.random() * W, Math.random() * H, 20 + Math.random() * 45, 0, Math.PI * 2);
+    ctx.strokeStyle = p[Math.floor(Math.random() * p.length)];
+    ctx.lineWidth = 0.5; ctx.globalAlpha = 0.25; ctx.stroke(); ctx.globalAlpha = 1;
+  }
+}
+
+const cats = [
+  { n: 'Wellness & self-optimisation', c: '#9FE1CB' },
+  { n: 'Fashion & aesthetic identity', c: '#F4C0D1' },
+  { n: 'Political & activist content', c: '#B5D4F4' },
+  { n: 'Productivity & hustle culture', c: '#FAC775' },
+  { n: 'Alternative subculture', c: '#CEC9F0' },
+  { n: 'Mainstream entertainment', c: '#D3D1C7' },
+];
+const tips = {
+  'Wellness & self-optimisation': ['Morning routine optimised by algorithm','Cold plunge content amplified 340%','Sleep data reshapes recommended feed'],
+  'Fashion & aesthetic identity': ['Cottagecore surfaced by For You page','Dark academia cluster, 2.1M followers','Microtrend: clean girl aesthetic'],
+  'Political & activist content': ['Climate content suppressed 2021','Protest footage limited in reach','Activist account shadow-restricted'],
+  'Productivity & hustle culture': ['6am grindset content, 89k views','Side hustle format rewards consistency','Burnout normalised through repetition'],
+  'Alternative subculture': ['Low algorithmic reach, manually found','Niche community, not amplified','Underground aesthetic outside the For You'],
+  'Mainstream entertainment': ['Trending audio used, reach tripled','Viral sound boosted by algorithm','Format copied from top creator'],
+};
+
+function initBubbles() {
+  const cvs = document.getElementById('bcanvas');
+  if (!cvs) return;
+  const W = cvs.offsetWidth || 600, H = 280;
+  cvs.width = W;
+  bubbles = [];
+  for (let i = 0; i < 140; i++) {
+    const cat = cats[Math.floor(Math.random() * cats.length)];
+    const ts = tips[cat.n] || ['Platform conditioned identity'];
+    bubbles.push({ x: 20 + Math.random() * (W - 40), y: 16 + Math.random() * (H - 32), r: 4 + Math.random() * 9, vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35, cat, tip: ts[Math.floor(Math.random() * ts.length)] });
+  }
+  const tt = document.getElementById('btooltip');
+  cvs.addEventListener('mousemove', e => {
+    const rect = cvs.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+    let found = null;
+    for (const b of bubbles) { if (Math.hypot(b.x - mx, b.y - my) < b.r + 4) { found = b; break; } }
+    if (found) {
+      tt.style.display = 'block';
+      tt.style.left = (e.clientX - rect.left + 14) + 'px';
+      tt.style.top = (e.clientY - rect.top - 10) + 'px';
+      tt.innerHTML = '<strong>' + found.cat.n + '</strong><br>' + found.tip;
+    } else { tt.style.display = 'none'; }
+  });
+  cvs.addEventListener('mouseleave', () => tt.style.display = 'none');
+  if (animID) cancelAnimationFrame(animID);
+  function loop() {
+    const ctx = cvs.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    for (const b of bubbles) {
+      b.x += b.vx; b.y += b.vy;
+      if (b.x < b.r || b.x > W - b.r) b.vx *= -1;
+      if (b.y < b.r || b.y > H - b.r) b.vy *= -1;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = b.cat.c; ctx.globalAlpha = 0.8; ctx.fill();
+      ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 0.5; ctx.stroke();
+    }
+    animID = requestAnimationFrame(loop);
+  }
+  loop();
+}
+</script>
+</body>
+</html>
